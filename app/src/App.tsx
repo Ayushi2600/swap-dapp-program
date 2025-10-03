@@ -8,7 +8,7 @@ import { HiMenu, HiX } from "react-icons/hi";
 import { getSolBalance, getTokenBalance } from "./utils/solana";
 import { USDC_MINT } from "./constant";
 
-const connection = new Connection("http://localhost:8899");
+const connection = new Connection("https://api.devnet.solana.com");
 
 function App() {
   const { publicKey, connected } = useWallet();

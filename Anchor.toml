@@ -8,11 +8,14 @@ skip-lint = false
 [programs.localnet]
 swap_dapp = "FPqmEZzQRnECtuELrmGctvnuboPpkm2hCFopVD35nHge"
 
+[programs.devnet]
+swap_dapp = "FPqmEZzQRnECtuELrmGctvnuboPpkm2hCFopVD35nHge"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

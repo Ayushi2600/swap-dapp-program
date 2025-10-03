@@ -8,7 +8,7 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({ children })
     const wallets = [new PhantomWalletAdapter()];
 
     return (
-        <ConnectionProvider endpoint="http://127.0.0.1:8899">
+        <ConnectionProvider endpoint="https://api.devnet.solana.com">
             <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider>{children}</WalletModalProvider>
             </WalletProvider>
