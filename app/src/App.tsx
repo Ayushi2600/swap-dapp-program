@@ -3,7 +3,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Connection } from "@solana/web3.js";
 import { SwapForm } from "./components/SwapForm";
-import { SwapTokenToSolForm } from "./components/SwapTokenToSolForm";
 import { HiMenu, HiX } from "react-icons/hi";
 import { getSolBalance, getTokenBalance } from "./utils/solana";
 import { USDC_MINT } from "./constant";
@@ -18,7 +17,6 @@ function App() {
     null
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
 
   const fetchBalances = async () => {
     if (!connected || !publicKey) return;
@@ -36,7 +34,7 @@ function App() {
     }
   };
 
-    useEffect(() => {
+  useEffect(() => {
     fetchBalances();
   }, [connected, publicKey]);
 
@@ -157,7 +155,6 @@ function App() {
               {activeTab && (
                 <div className="p-6 rounded-2xl shadow-inner border border-gray-700 bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800">
                   {activeTab === "swapSol" && <SwapForm />}
-                  {/* {activeTab === "swapToken" && <SwapTokenToSolForm />} */}
                 </div>
               )}
             </>

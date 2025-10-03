@@ -42,6 +42,9 @@ export const SwapForm = () => {
   const [adminTokenAmount, setAdminTokenAmount] = useState("");
   const [adminSolAmount, setAdminSolAmount] = useState("");
   const [showFaucet, setShowFaucet] = useState(false);
+  const [transactionSignature, setTransactionSignature] = useState<
+    string | null
+  >(null);
 
   const getProvider = () => {
     const provider = new AnchorProvider(connection, ourWallet, {
@@ -69,11 +72,8 @@ export const SwapForm = () => {
       );
 
       if (accountInfo) {
-        console.log("Token account exists:", associatedTokenAddress.toString());
         return { address: associatedTokenAddress };
       }
-
-      console.log("Creating new token account for:", owner.toString());
 
       const transaction = new Transaction().add(
         createAssociatedTokenAccountInstruction(
@@ -104,8 +104,6 @@ export const SwapForm = () => {
         },
         "confirmed"
       );
-
-      console.log("Token account created:", associatedTokenAddress.toString());
       return { address: associatedTokenAddress };
     } catch (err: any) {
       console.error("Error in getOrCreateUserTokenAccount:", err);
@@ -261,7 +259,8 @@ export const SwapForm = () => {
         preflightCommitment: "confirmed",
       });
 
-      console.log("Transaction sent:", txSig);
+      setSuccess(`✅ Swapped successfully!`);
+      setTransactionSignature(txSig);
 
       // Confirm transaction
       const confirmation = await connection.confirmTransaction(
@@ -277,7 +276,8 @@ export const SwapForm = () => {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
 
-      setSuccess(`✅ Swapped successfully! Tx: ${txSig.slice(0, 8)}...`);
+      setSuccess(`✅ Swapped successfully!`);
+      setTransactionSignature(txSig);
       await checkVaultBalance();
       setAmount("");
     } catch (error: any) {
@@ -380,8 +380,6 @@ export const SwapForm = () => {
         preflightCommitment: "confirmed",
       });
 
-      console.log("Token to SOL swap transaction sent:", txSig);
-
       // Wait for confirmation
       const confirmation = await connection.confirmTransaction(
         {
@@ -396,8 +394,8 @@ export const SwapForm = () => {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
 
-      setSuccess(`✅ Swapped successfully! Tx: ${txSig.slice(0, 8)}...`);
-      console.log("Confirmed tx:", txSig);
+      setSuccess(`✅ Swapped successfully!`);
+      setTransactionSignature(txSig);
 
       await checkVaultBalance();
       setAmount("");
@@ -434,6 +432,7 @@ export const SwapForm = () => {
     setAmount("");
     setError(null);
     setSuccess(null);
+    setTransactionSignature(null);
   };
 
   const setupVault = async () => {
@@ -445,9 +444,6 @@ export const SwapForm = () => {
       if (!ourWallet.publicKey) {
         throw new Error("Wallet not connected");
       }
-
-      console.log("PROGRAM_ID type:", PROGRAM_ID.toBase58());
-      console.log("USDC_MINT type:", USDC_MINT.toBase58());
 
       if (!PROGRAM_ID) {
         throw new Error("PROGRAM_ID is undefined");
@@ -486,15 +482,6 @@ export const SwapForm = () => {
         programId
       );
 
-      console.log("Initializing vault with accounts:", {
-        owner: ourWallet.publicKey.toString(),
-        vaultState: vaultStatePda.toString(),
-        mint: usdcMint.toString(),
-        vaultTokenAccount: vaultTokenAccount.toString(),
-        vaultAuthority: vaultAuthorityPda.toString(),
-        vaultSolAccount: vaultSolPda.toString(),
-      });
-
       const accountsObj = {
         owner: ourWallet.publicKey,
         vault_state: vaultStatePda,
@@ -507,20 +494,18 @@ export const SwapForm = () => {
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       };
 
-      console.log("Accounts being passed (with snake_case):");
       Object.entries(accountsObj).forEach(([key, value]) => {
         console.log(`  ${key}:`, value?.toString(), typeof value);
       });
 
       const tx = await program.methods.initialize().accounts(accountsObj).rpc();
 
-      console.log("✅ Vault initialized:", tx);
-      console.log("Vault token account:", vaultTokenAccount.toString());
       setSuccess(
         `Vault initialized! Token account: ${vaultTokenAccount
           .toString()
           .slice(0, 8)}...`
       );
+      setTransactionSignature(tx);
       setNeedsSetup(false);
       await checkVaultBalance();
       await checkIfOwner();
@@ -567,15 +552,7 @@ export const SwapForm = () => {
 
       const tokenAmount = new BN(parseFloat(adminTokenAmount) * 1_000_000_000);
 
-      console.log("Deposit tokens accounts:", {
-        owner: ourWallet.publicKey.toString(),
-        vaultState: vaultStatePda.toString(),
-        ownerTokenAccount: ownerTokenAccount.address.toString(),
-        vaultTokenAccount: vaultTokenAccount.toString(),
-        tokenProgram: TOKEN_PROGRAM_ID.toString(),
-      });
-
-      // 🔥 CRITICAL FIX: Manual transaction creation with fresh blockhash
+      // CRITICAL FIX: Manual transaction creation with fresh blockhash
       const { blockhash, lastValidBlockHeight } =
         await connection.getLatestBlockhash("confirmed");
 
@@ -600,11 +577,9 @@ export const SwapForm = () => {
       const rawTransaction = signedTx.serialize();
 
       const txSig = await connection.sendRawTransaction(rawTransaction, {
-        skipPreflight: true, // ⚠️ Important: skip preflight to avoid simulation issues
+        skipPreflight: true, // Important: skip preflight to avoid simulation issues
         preflightCommitment: "confirmed",
       });
-
-      console.log("Token deposit transaction sent:", txSig);
 
       // Wait for confirmation
       const confirmation = await connection.confirmTransaction(
@@ -620,12 +595,8 @@ export const SwapForm = () => {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
 
-      setSuccess(
-        `✅ Deposited ${adminTokenAmount} tokens to vault! Tx: ${txSig.slice(
-          0,
-          8
-        )}...`
-      );
+      setSuccess(`✅ Deposited ${adminTokenAmount} tokens to vault!`);
+      setTransactionSignature(txSig);
       setAdminTokenAmount("");
       await checkVaultBalance();
     } catch (error: any) {
@@ -662,6 +633,7 @@ export const SwapForm = () => {
       await connection.confirmTransaction(signature, "confirmed");
 
       setSuccess("✅ Received 2 SOL from faucet!");
+      setTransactionSignature(signature);
     } catch (error: any) {
       console.error("Error requesting SOL:", error);
       setError(
@@ -721,11 +693,9 @@ export const SwapForm = () => {
       const rawTransaction = signedTx.serialize();
 
       const txSig = await connection.sendRawTransaction(rawTransaction, {
-        skipPreflight: true, // ⚠️ Change to true to avoid simulation issues
+        skipPreflight: true, // Change to true to avoid simulation issues
         preflightCommitment: "confirmed",
       });
-
-      console.log("SOL Deposit transaction sent:", txSig);
 
       // Wait for confirmation
       const confirmation = await connection.confirmTransaction(
@@ -741,12 +711,8 @@ export const SwapForm = () => {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
 
-      setSuccess(
-        `✅ Deposited ${adminSolAmount} SOL to vault! Tx: ${txSig.slice(
-          0,
-          8
-        )}...`
-      );
+      setSuccess(`✅ Deposited ${adminSolAmount} SOL to vault!`);
+      setTransactionSignature(txSig);
       setAdminSolAmount("");
       await checkVaultBalance();
     } catch (error: any) {
@@ -981,6 +947,101 @@ export const SwapForm = () => {
       {success && (
         <div className="p-3 rounded-md bg-green-900/50 border border-green-500 text-green-200 text-sm break-all">
           {success}
+        </div>
+      )}
+
+      {transactionSignature && (
+        <div className="p-3 rounded-md bg-blue-900/50 border border-blue-500">
+          <div className="text-blue-200 text-sm mb-2">
+            ✅ Transaction Successful
+          </div>
+
+          <a
+            href={`https://explorer.solana.com/tx/${transactionSignature}?cluster=devnet`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block group"
+          >
+            <div className="bg-blue-800/30 p-3 rounded border border-blue-600/50 hover:bg-blue-700/30 hover:border-blue-500 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-blue-100 text-xs font-medium mb-1">
+                    View Transaction
+                  </div>
+                  <code
+                    className="text-blue-200 text-xs break-all font-mono group-hover:text-white"
+                    title={transactionSignature}
+                  >
+                    {transactionSignature.slice(0, 24)}...
+                    {transactionSignature.slice(-8)}
+                  </code>
+                </div>
+                <div className="text-blue-300 group-hover:text-blue-200 ml-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </a>
+
+          <div className="mt-3 flex gap-3 text-xs">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText(transactionSignature);
+                setSuccess("Signature copied to clipboard!");
+                setTimeout(() => setSuccess(null), 2000);
+              }}
+              className="text-blue-300 hover:text-blue-200 underline flex items-center gap-1"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+              Copy
+            </button>
+            <a
+              href={`https://solscan.io/tx/${transactionSignature}?cluster=devnet`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-300 hover:text-blue-200 underline flex items-center gap-1"
+            >
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+              Solscan
+            </a>
+          </div>
         </div>
       )}
     </div>
