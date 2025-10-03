@@ -94,20 +94,6 @@ function App() {
           >
             Swap SOL → Token
           </button>
-
-          <button
-            onClick={() => {
-              setActiveTab("swapToken");
-              setSidebarOpen(false);
-            }}
-            className={`py-3 px-4 rounded-xl font-bold text-white transition-all duration-200 shadow-lg ${
-              activeTab === "swapToken"
-                ? "bg-gradient-to-r from-green-400 via-green-500 to-green-600 scale-105"
-                : "bg-green-700 hover:bg-green-600"
-            }`}
-          >
-            Swap Token → SOL
-          </button>
         </aside>
 
         {/* Main Content */}
